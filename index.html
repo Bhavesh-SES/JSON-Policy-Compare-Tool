@@ -1,23 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>CSV & JSON Sorter Tool</title>
+  <meta charset="UTF-8" />
+  <title>TSV JSON Sorter Tool</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
+      font-family: 'Segoe UI', sans-serif;
+      background: #f5f7fa;
+      padding: 30px;
+      color: #333;
+    }
+
+    h2 {
+      margin-bottom: 10px;
     }
 
     input, textarea, button {
-      margin: 8px 5px;
-      padding: 6px 10px;
+      padding: 8px 12px;
+      margin: 10px 5px;
+      font-size: 14px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 120px;
+      font-family: monospace;
+      resize: vertical;
     }
 
     .flex-container {
       display: flex;
       gap: 20px;
       flex-wrap: wrap;
+      margin-bottom: 20px;
     }
 
     .box {
@@ -25,128 +40,118 @@
       min-width: 300px;
     }
 
+    #jsonOutput {
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 10px;
+      min-height: 120px;
+      font-family: monospace;
+      white-space: pre-wrap;
+    }
+
     table {
       border-collapse: collapse;
       width: 100%;
-      margin-top: 15px;
+      background: white;
+      margin-top: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
     }
 
     th, td {
       border: 1px solid #ddd;
       padding: 8px;
+      text-align: left;
     }
 
-    tr:nth-child(even) { background-color: #f9f9f9; }
-    tr:hover { background-color: #f1f1f1; }
+    th {
+      background-color: #e0e0e0;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
 
     .highlight {
       background-color: yellow;
       font-weight: bold;
     }
-
-    textarea {
-      width: 100%;
-      height: 120px;
-      font-family: monospace;
-    }
-
-    #jsonOutput {
-      background: #f4f4f4;
-      border: 1px solid #ccc;
-      padding: 10px;
-      min-height: 120px;
-      white-space: pre-wrap;
-    }
   </style>
 </head>
 <body>
 
-  <h2>CSV & JSON Sorting Tool</h2>
+  <h2>TSV JSON Sorting Tool</h2>
 
   <div class="flex-container">
     <div class="box">
       <h3>Paste Nested JSON</h3>
-      <textarea id="jsonInput" placeholder='[{"S":"value1"},{"S":"value2"}]'></textarea>
+      <textarea id="jsonInput" placeholder='[{"S":"default"},{"S":"eight8xl"}]'></textarea>
     </div>
-
     <div class="box">
       <h3>Sorted Output</h3>
       <div id="jsonOutput">Sorted values will appear here...</div>
     </div>
   </div>
 
-  <hr>
-
-  <input type="file" id="csvFileInput" accept=".csv" />
-  <input type="text" id="searchBox" placeholder="Search..." />
+  <input type="file" id="tsvFileInput" accept=".csv,.tsv,.txt" />
+  <input type="text" id="searchBox" placeholder="Search in table..." />
   <button onclick="copyTable()">Copy Table</button>
-  <button onclick="downloadCSV()">Download CSV</button>
+  <button onclick="downloadTSV()">Download TSV</button>
 
   <div id="tableContainer"></div>
 
   <script>
     let processedData = [];
-    let headers = [];
-
-    // JSON Sorting Input Logic
+    let headers = ["OverRideID", "JsonColumn"];
+    
+    // Handle manual JSON input
     document.getElementById('jsonInput').addEventListener('input', () => {
-      const jsonText = document.getElementById('jsonInput').value.trim();
+      const input = document.getElementById('jsonInput').value.trim();
       const output = document.getElementById('jsonOutput');
-
-      if (!jsonText) {
+      if (!input) {
         output.textContent = 'Sorted values will appear here...';
         return;
       }
-
       try {
-        const json = JSON.parse(jsonText);
-        const values = json.map(obj => obj.S).sort();
-        output.textContent = values.join(', ');
-      } catch {
-        output.textContent = '❌ Invalid JSON';
+        const parsed = JSON.parse(input);
+        const sorted = parsed.map(o => o.S).sort().join(', ');
+        output.textContent = sorted;
+      } catch (e) {
+        output.textContent = '❌ Invalid JSON format';
       }
     });
 
-    // CSV File Logic
-    document.getElementById('csvFileInput').addEventListener('change', handleFile);
-
-    function handleFile(event) {
+    // Handle TSV file upload
+    document.getElementById('tsvFileInput').addEventListener('change', function (event) {
       const file = event.target.files[0];
       if (!file) return;
-
+      
       const reader = new FileReader();
-      reader.onload = e => {
-        const lines = e.target.result.split('\n').filter(Boolean);
-        headers = lines[0].split(',');
-
+      reader.onload = function (e) {
+        const lines = e.target.result.trim().split(/\r?\n/);
         processedData = [];
 
-        for (let i = 1; i < lines.length; i++) {
-          const [id, jsonStr] = splitCSVLine(lines[i]);
+        for (const line of lines) {
+          const [id, jsonStr] = line.split('\t');
+          let sortedVal = "Error: Invalid JSON";
 
           try {
-            const json = JSON.parse(jsonStr);
-            const values = json.map(obj => obj.S).sort();
-            const sorted = values.join(', ');
-            processedData.push([id, jsonStr, sorted]);
-          } catch {
-            processedData.push([id, jsonStr, 'Error: Invalid JSON']);
+            const json = JSON.parse(jsonStr.trim());
+            const values = json.map(obj => obj.S);
+            sortedVal = values.sort().join(', ');
+          } catch (e) {
+            // Invalid JSON, keep error string
           }
+
+          processedData.push([id.trim(), jsonStr.trim(), sortedVal]);
         }
 
         renderTable(processedData);
       };
 
       reader.readAsText(file);
-    }
+    });
 
-    function splitCSVLine(line) {
-      const firstComma = line.indexOf(',');
-      const id = line.slice(0, firstComma);
-      const jsonPart = line.slice(firstComma + 1).trim();
-      return [id, jsonPart];
-    }
-
+    // Render output table
     function renderTable(data) {
       const searchTerm = document.getElementById('searchBox').value.toLowerCase();
       let html = `<table><thead><tr><th>${headers[0]}</th><th>${headers[1]}</th><th>SortedValues</th></tr></thead><tbody>`;
@@ -156,8 +161,7 @@
 
         html += '<tr>';
         for (let cell of row) {
-          const highlighted = highlightMatch(cell, searchTerm);
-          html += `<td>${highlighted}</td>`;
+          html += `<td>${highlight(cell, searchTerm)}</td>`;
         }
         html += '</tr>';
       }
@@ -168,12 +172,14 @@
 
     document.getElementById('searchBox').addEventListener('input', () => renderTable(processedData));
 
-    function highlightMatch(text, term) {
+    // Highlight matches
+    function highlight(text, term) {
       if (!term) return text;
       const regex = new RegExp(`(${term})`, 'gi');
       return text.replace(regex, '<span class="highlight">$1</span>');
     }
 
+    // Copy table content
     function copyTable() {
       const table = document.querySelector('#tableContainer table');
       if (!table) return alert('No table to copy!');
@@ -187,20 +193,21 @@
       alert('✅ Table copied to clipboard!');
     }
 
-    function downloadCSV() {
-      if (processedData.length === 0) return alert('No data to download!');
+    // Download TSV
+    function downloadTSV() {
+      if (processedData.length === 0) return alert('Nothing to download!');
 
-      let csv = `${headers[0]},${headers[1]},SortedValues\n`;
+      let tsv = `${headers[0]}\t${headers[1]}\tSortedValues\n`;
       for (let row of processedData) {
-        csv += row.map(field => `"${field.replace(/"/g, '""')}"`).join(',') + '\n';
+        tsv += row.map(cell => `"${cell.replace(/"/g, '""')}"`).join('\t') + '\n';
       }
 
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const blob = new Blob([tsv], { type: 'text/tab-separated-values;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'output.csv';
-      a.click();
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'output.tsv';
+      link.click();
       URL.revokeObjectURL(url);
     }
   </script>
