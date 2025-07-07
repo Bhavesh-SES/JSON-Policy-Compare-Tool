@@ -2,17 +2,35 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>TSV JSON Sorter Tool</title>
-  <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #f5f7fa;
-      padding: 30px;
-      color: #333;
+  <title>CSV JSON Sorter Tool</title>
+  <style id="theme-style">
+    :root {
+      --bg-color: #f5f7fa;
+      --text-color: #333;
+      --box-bg: #fff;
+      --border-color: #ccc;
+      --table-header: #e0e0e0;
+      --highlight: yellow;
     }
 
-    h2 {
-      margin-bottom: 10px;
+    [data-theme='dark'] {
+      --bg-color: #1e1e1e;
+      --text-color: #eee;
+      --box-bg: #2b2b2b;
+      --border-color: #444;
+      --table-header: #3c3c3c;
+      --highlight: orange;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: var(--bg-color);
+      color: var(--text-color);
+      padding: 20px;
+    }
+
+    h2, h3 {
+      margin: 10px 0;
     }
 
     input, textarea, button {
@@ -22,64 +40,82 @@
     }
 
     textarea {
-      width: 100%;
-      height: 120px;
       font-family: monospace;
-      resize: vertical;
+      resize: both;
+      width: 100%;
+      min-height: 250px;
+      box-sizing: border-box;
     }
 
     .flex-container {
       display: flex;
       gap: 20px;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
       margin-bottom: 20px;
     }
 
     .box {
       flex: 1;
-      min-width: 300px;
+      display: flex;
+      flex-direction: column;
+      min-height: 300px;
     }
 
-    #jsonOutput {
-      background: #fff;
-      border: 1px solid #ccc;
+    .output-box {
+      background: var(--box-bg);
+      border: 1px solid var(--border-color);
       padding: 10px;
-      min-height: 120px;
-      font-family: monospace;
+      flex: 1;
+      overflow: auto;
       white-space: pre-wrap;
+      height: 100%;
+      resize: both;
+      margin-top: 34px;
+    }
+
+    .output-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
 
     table {
       border-collapse: collapse;
       width: 100%;
-      background: white;
-      margin-top: 20px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+      background: var(--box-bg);
     }
 
     th, td {
-      border: 1px solid #ddd;
+      border: 1px solid var(--border-color);
       padding: 8px;
       text-align: left;
+      white-space: nowrap;
     }
 
     th {
-      background-color: #e0e0e0;
+      background-color: var(--table-header);
+    }
+
+    col.resizeable {
+      resize: horizontal;
+      overflow: auto;
     }
 
     tr:nth-child(even) {
-      background-color: #f9f9f9;
+      background-color: rgba(0, 0, 0, 0.03);
     }
 
     .highlight {
-      background-color: yellow;
+      background-color: var(--highlight);
       font-weight: bold;
     }
   </style>
 </head>
-<body>
+<body data-theme="light">
 
-  <h2>TSV JSON Sorting Tool</h2>
+  <h2>CSV JSON Sorting Tool</h2>
+
+  <button onclick="toggleTheme()">🌓 Toggle Theme</button>
 
   <div class="flex-container">
     <div class="box">
@@ -87,30 +123,33 @@
       <textarea id="jsonInput" placeholder='[{"S":"default"},{"S":"eight8xl"}]'></textarea>
     </div>
     <div class="box">
-      <h3>Sorted Output</h3>
-      <div id="jsonOutput">Sorted values will appear here...</div>
+      <div class="output-header">
+        <h3>Sorted Output</h3>
+        <button onclick="copySorted()">📋 Copy</button>
+      </div>
+      <div class="output-box" id="jsonOutput">Sorted values will appear here...</div>
     </div>
   </div>
 
-  <input type="file" id="tsvFileInput" accept=".csv,.tsv,.txt" />
+  <input type="file" id="csvFileInput" accept=".csv,.txt" />
+  <button id="loadButton">📥 Load & Process</button>
   <input type="text" id="searchBox" placeholder="Search in table..." />
-  <button onclick="copyTable()">Copy Table</button>
-  <button onclick="downloadTSV()">Download TSV</button>
+  <button onclick="copyTable()">📋 Copy Table</button>
+  <button onclick="downloadCSV()">⬇️ Download CSV</button>
 
-  <div id="tableContainer"></div>
+  <div style="overflow-x: auto;">
+    <div id="tableContainer"></div>
+  </div>
 
   <script>
+    let fileContent = '';
     let processedData = [];
-    let headers = ["OverRideID", "JsonColumn"];
-    
-    // Handle manual JSON input
+    const headers = ["OverRideID", "JsonColumn"];
+
     document.getElementById('jsonInput').addEventListener('input', () => {
       const input = document.getElementById('jsonInput').value.trim();
       const output = document.getElementById('jsonOutput');
-      if (!input) {
-        output.textContent = 'Sorted values will appear here...';
-        return;
-      }
+      if (!input) return output.textContent = 'Sorted values will appear here...';
       try {
         const parsed = JSON.parse(input);
         const sorted = parsed.map(o => o.S).sort().join(', ');
@@ -120,51 +159,56 @@
       }
     });
 
-    // Handle TSV file upload
-    document.getElementById('tsvFileInput').addEventListener('change', function (event) {
+    document.getElementById('csvFileInput').addEventListener('change', function (event) {
       const file = event.target.files[0];
       if (!file) return;
-      
       const reader = new FileReader();
       reader.onload = function (e) {
-        const lines = e.target.result.trim().split(/\r?\n/);
-        processedData = [];
-
-        for (const line of lines) {
-          const [id, jsonStr] = line.split('\t');
-          let sortedVal = "Error: Invalid JSON";
-
-          try {
-            const json = JSON.parse(jsonStr.trim());
-            const values = json.map(obj => obj.S);
-            sortedVal = values.sort().join(', ');
-          } catch (e) {
-            // Invalid JSON, keep error string
-          }
-
-          processedData.push([id.trim(), jsonStr.trim(), sortedVal]);
-        }
-
-        renderTable(processedData);
+        fileContent = e.target.result;
+        alert("✅ File loaded! Now click 'Load & Process'");
       };
-
       reader.readAsText(file);
     });
 
-    // Render output table
+    document.getElementById('loadButton').addEventListener('click', () => {
+      if (!fileContent) return alert("⚠️ Upload a file first.");
+      const lines = fileContent.trim().split(/\r?\n/);
+      processedData = [];
+
+      lines.forEach((line, index) => {
+        const parts = line.match(/^([^,]+),"(.*)"$/);
+        if (!parts || parts.length < 3) {
+          console.warn(`⚠️ Skipping line ${index + 1}: Invalid format`);
+          return;
+        }
+        const id = parts[1].trim();
+        const rawJsonStr = parts[2].replace(/""/g, '"').trim();
+        let sortedVal = "Error: Invalid JSON";
+        try {
+          const json = JSON.parse(rawJsonStr);
+          const values = json.map(obj => obj.S);
+          sortedVal = values.sort().join(', ');
+        } catch (e) {
+          console.error(`❌ Invalid JSON at line ${index + 1}`);
+        }
+        processedData.push([id, rawJsonStr, sortedVal]);
+      });
+
+      renderTable(processedData);
+    });
+
     function renderTable(data) {
       const searchTerm = document.getElementById('searchBox').value.toLowerCase();
-      let html = `<table><thead><tr><th>${headers[0]}</th><th>${headers[1]}</th><th>SortedValues</th></tr></thead><tbody>`;
+      let html = `<table><colgroup><col class="resizeable"><col class="resizeable"><col class="resizeable"></colgroup><thead><tr><th>${headers[0]}</th><th>${headers[1]}</th><th>SortedValues</th></tr></thead><tbody>`;
 
-      for (let row of data) {
-        if (searchTerm && !row.join(' ').toLowerCase().includes(searchTerm)) continue;
-
+      data.forEach(row => {
+        if (searchTerm && !row.join(' ').toLowerCase().includes(searchTerm)) return;
         html += '<tr>';
-        for (let cell of row) {
+        row.forEach(cell => {
           html += `<td>${highlight(cell, searchTerm)}</td>`;
-        }
+        });
         html += '</tr>';
-      }
+      });
 
       html += '</tbody></table>';
       document.getElementById('tableContainer').innerHTML = html;
@@ -172,17 +216,15 @@
 
     document.getElementById('searchBox').addEventListener('input', () => renderTable(processedData));
 
-    // Highlight matches
     function highlight(text, term) {
       if (!term) return text;
       const regex = new RegExp(`(${term})`, 'gi');
       return text.replace(regex, '<span class="highlight">$1</span>');
     }
 
-    // Copy table content
     function copyTable() {
       const table = document.querySelector('#tableContainer table');
-      if (!table) return alert('No table to copy!');
+      if (!table) return alert('⚠️ No table to copy.');
       const range = document.createRange();
       range.selectNode(table);
       const sel = window.getSelection();
@@ -190,27 +232,35 @@
       sel.addRange(range);
       document.execCommand('copy');
       sel.removeAllRanges();
-      alert('✅ Table copied to clipboard!');
+      alert('✅ Table copied to clipboard.');
     }
 
-    // Download TSV
-    function downloadTSV() {
-      if (processedData.length === 0) return alert('Nothing to download!');
+    function copySorted() {
+      const text = document.getElementById('jsonOutput').textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        alert("✅ Sorted value copied!");
+      });
+    }
 
-      let tsv = `${headers[0]}\t${headers[1]}\tSortedValues\n`;
-      for (let row of processedData) {
-        tsv += row.map(cell => `"${cell.replace(/"/g, '""')}"`).join('\t') + '\n';
-      }
-
-      const blob = new Blob([tsv], { type: 'text/tab-separated-values;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
+    function downloadCSV() {
+      if (!processedData.length) return alert("⚠️ Nothing to download.");
+      let csv = `${headers[0]},${headers[1]},SortedValues\n`;
+      processedData.forEach(row => {
+        csv += row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(',') + '\n';
+      });
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
-      link.href = url;
-      link.download = 'output.tsv';
+      link.href = URL.createObjectURL(blob);
+      link.download = 'output.csv';
       link.click();
-      URL.revokeObjectURL(url);
+      URL.revokeObjectURL(link.href);
+    }
+
+    function toggleTheme() {
+      const body = document.body;
+      const current = body.getAttribute('data-theme');
+      body.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
     }
   </script>
-
 </body>
 </html>
