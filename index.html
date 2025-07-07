@@ -22,6 +22,12 @@
       --highlight-yellow: yellow;
     }
 
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
     body {
       font-family: Arial, sans-serif;
       margin: 0;
@@ -52,32 +58,41 @@
     .flex {
       display: flex;
       gap: 20px;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
+      align-items: stretch;
+      /* Ensures boxes align vertically */
     }
 
     .box {
       flex: 1;
       min-width: 300px;
-    }
-
-    textarea {
-      width: 100%;
-      min-height: 250px;
-      resize: both;
-      font-family: monospace;
-    }
-
-    .output {
+      display: flex;
+      flex-direction: column;
       background: var(--box-light);
       border: 1px solid var(--border);
       padding: 10px;
-      white-space: pre-wrap;
-      min-height: 250px;
-      overflow: auto;
     }
 
+    textarea,
+    .output {
+      flex: 1;
+      min-height: 300px;
+      max-height: 600px;
+      resize: none;
+      padding: 10px;
+      border: 1px solid var(--border);
+      background: var(--box-light);
+      overflow-y: auto;
+    }
+
+    [data-theme="dark"] .box {
+      background: var(--box-dark);
+    }
+
+    [data-theme="dark"] textarea,
     [data-theme="dark"] .output {
       background: var(--box-dark);
+      color: var(--text-dark);
     }
 
     table {
@@ -130,6 +145,7 @@
   </style>
 </head>
 
+
 <body data-theme="light">
   <h2>JSON Sorter & CSV Comparator Tool</h2>
   <button onclick="toggleTheme()">🌓 Toggle Theme</button>
@@ -140,15 +156,22 @@
 
   <!-- PASTE MODE -->
   <div id="pasteMode" class="flex">
+    <!-- JSON Input Box -->
     <div class="box">
       <h3>Paste Nested JSON</h3>
-      <textarea id="jsonInput"></textarea>
+      <textarea id="jsonInput" placeholder='One JSON array per line'></textarea>
     </div>
+
+    <!-- Sorted Output Box -->
     <div class="box">
-      <h3>Sorted Output <button onclick="copySorted()">📋 Copy</button></h3>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h3>Sorted Output</h3>
+        <button onclick="copySorted()">📋 Copy</button>
+      </div>
       <div class="output" id="jsonOutput">Sorted result will appear here...</div>
     </div>
   </div>
+
 
   <!-- UPLOAD MODE -->
   <div id="uploadMode" class="hidden">
@@ -180,24 +203,49 @@
         const line = lines[i].trim();
         if (!line) continue;
         try {
-          const cleaned = line.replace(/\"\"/g, '"');
+          const cleaned = line.replace(/\"\"/g, '\"');
           const arr = JSON.parse(cleaned);
           const sorted = arr.map(x => x.S).sort().join(", ");
-          results.push(sorted);
+          results.push(`${i + 1}. ${sorted}`);
         } catch (e) {
-          results.push(`❌ Line ${i + 1}: Invalid JSON`);
+          results.push(`${i + 1}. ❌ Invalid JSON`);
         }
       }
-
-      document.getElementById("jsonOutput").textContent = results.join("\n");
+      document.getElementById("jsonOutput").innerHTML = results
+        .map(line => `<div>${line}</div><hr style="border: 0; border-top: 1px dashed #ccc;">`)
+        .join("");
     });
 
 
+
     function copySorted() {
-      const text = document.getElementById("jsonOutput").textContent;
-      navigator.clipboard.writeText(text);
-      alert("✅ Copied to clipboard");
+      const val = document.getElementById("jsonInput").value;
+      const lines = val.trim().split("\n");
+      const results = [];
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+        try {
+          const cleaned = line.replace(/\"\"/g, '"');
+          const arr = JSON.parse(cleaned);
+          const sorted = arr.map(x => x.S).sort().join(", ");
+          results.push(sorted); // ⛔️ No index or formatting
+        } catch (e) {
+          results.push(`❌ Invalid JSON`);
+        }
+      }
+
+      // Copy plain-text version (each sorted output on a new line)
+      const textToCopy = results.join("\n");
+
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        alert("✅ Sorted values copied to clipboard!");
+      }).catch(err => {
+        alert("❌ Failed to copy: " + err);
+      });
     }
+
 
     let tableData = [];
 
