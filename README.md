@@ -1,6 +1,6 @@
 ## ✅ README_Policies_Comparison_Tool.md
 
-```markdown
+markdown
 # ✅ Policies Comparison Tool
 
 ## 📌 Purpose
@@ -13,7 +13,7 @@ Compare policy configurations (DynamoDB style) across different DCs (like DCA, D
   - `DCA`, `DCB`, `DCC`, `DCD` — each column is a **JSON array** of key-value pairs
 
 ### 🧾 Sample Cell Value
-```json
+json
 [{"S":"hevc_hdr10_5994"},{"S":"dolby"},{"S":"noDrm"},{"S":"three8xl"},{"S":"outletCollapse"},{"S":"disableDolbyDashWeb"},{"S":"dolby5994"},{"S":"default"},{"S":"sixHourDvrWindow"}]
 🧾 Sample Row
 OverRideID,DCA,DCB,DCC,DCD
