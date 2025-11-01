@@ -2,332 +2,346 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title> 🧠 JSON-Policy-Compare-Tool</title>
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-  <style>
-    :root {
-      --bg-light: #f5f5f5;
-      --bg-dark: #1e1e1e;
-      --text-light: #333;
-      --text-dark: #eee;
-      --box-light: #fff;
-      --box-dark: #2a2a2a;
-      --border: #ccc;
-      --green-light: #c8e6c9;
-      --green-dark: #4caf50;
-      --red-light: #ffcdd2;
-      --red-dark: #e57373;
-      --highlight-yellow: yellow;
-    }
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title> 🧠 JSON-Policy-Compare-Tool</title>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <style>
+        :root {
+            --bg-light: #f5f5f5;
+            --bg-dark: #1e1e1e;
+            --text-light: #333;
+            --text-dark: #eee;
+            --box-light: #fff;
+            --box-dark: #2a2a2a;
+            --border: #ccc;
+            --green-light: #c8e6c9;
+            --green-dark: #4caf50;
+            --red-light: #ffcdd2;
+            --red-dark: #e57373;
+            --highlight-yellow: yellow;
+        }
 
-    *,
-    *::before,
-    *::after {
-      box-sizing: border-box;
-    }
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
 
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 20px;
-      background: var(--bg-light);
-      color: var(--text-light);
-    }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: var(--bg-light);
+            color: var(--text-light);
+        }
 
-    [data-theme="dark"] {
-      background: var(--bg-dark);
-      color: var(--text-dark);
-    }
+        [data-theme="dark"] {
+            background: var(--bg-dark);
+            color: var(--text-dark);
+        }
 
-    h2,
-    h3 {
-      margin-bottom: 10px;
-    }
+        h2,
+        h3 {
+            margin-bottom: 10px;
+        }
 
-    button,
-    select,
-    input[type="file"],
-    input[type="text"] {
-      margin: 10px 5px;
-      padding: 8px 12px;
-      font-size: 14px;
-    }
+        button,
+        select,
+        input[type="file"],
+        input[type="text"] {
+            margin: 10px 5px;
+            padding: 8px 12px;
+            font-size: 14px;
+        }
 
-    .flex {
-      display: flex;
-      gap: 20px;
-      flex-wrap: nowrap;
-      align-items: stretch;
-      /* Ensures boxes align vertically */
-    }
+        .flex {
+            display: flex;
+            gap: 20px;
+            flex-wrap: nowrap;
+            align-items: stretch;
+            /* Ensures boxes align vertically */
+        }
 
-    .box {
-      flex: 1;
-      min-width: 300px;
-      display: flex;
-      flex-direction: column;
-      background: var(--box-light);
-      border: 1px solid var(--border);
-      padding: 10px;
-    }
+        .box {
+            flex: 1;
+            min-width: 300px;
+            display: flex;
+            flex-direction: column;
+            background: var(--box-light);
+            border: 1px solid var(--border);
+            padding: 10px;
+        }
 
-    textarea,
-    .output {
-      flex: 1;
-      min-height: 300px;
-      max-height: 600px;
-      resize: none;
-      padding: 10px;
-      border: 1px solid var(--border);
-      background: var(--box-light);
-      overflow-y: auto;
-    }
+        textarea,
+        .output {
+            flex: 1;
+            min-height: 300px;
+            max-height: 600px;
+            resize: none;
+            padding: 10px;
+            border: 1px solid var(--border);
+            background: var(--box-light);
+            overflow-y: auto;
+        }
 
-    [data-theme="dark"] .box {
-      background: var(--box-dark);
-    }
+        [data-theme="dark"] .box {
+            background: var(--box-dark);
+        }
 
-    [data-theme="dark"] textarea,
-    [data-theme="dark"] .output {
-      background: var(--box-dark);
-      color: var(--text-dark);
-    }
+        [data-theme="dark"] textarea,
+        [data-theme="dark"] .output {
+            background: var(--box-dark);
+            color: var(--text-dark);
+        }
 
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      margin-top: 20px;
-      table-layout: fixed;
-    }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+            table-layout: fixed;
+        }
 
-    th,
-    td {
-      border: 1px solid var(--border);
-      padding: 6px 10px;
-      text-align: left;
-      overflow-wrap: break-word;
-    }
+        th,
+        td {
+            border: 1px solid var(--border);
+            padding: 6px 10px;
+            text-align: left;
+            overflow-wrap: break-word;
+        }
 
-    th {
-      background-color: #ddd;
-    }
+        th {
+            background-color: #ddd;
+        }
 
-    .match {
-      background-color: var(--green-light);
-      color: var(--text-light);
-    }
+        .match {
+            background-color: var(--green-light);
+            color: var(--text-light);
+        }
 
-    [data-theme="dark"] .match {
-      background-color: var(--green-dark);
-      color: #fff;
-    }
+        [data-theme="dark"] .match {
+            background-color: var(--green-dark);
+            color: #fff;
+        }
 
-    .mismatch {
-      background-color: var(--red-light);
-      color: var(--text-light);
-    }
+        .mismatch {
+            background-color: var(--red-light);
+            color: var(--text-light);
+        }
 
-    [data-theme="dark"] .mismatch {
-      background-color: var(--red-dark);
-      color: #fff;
-    }
+        [data-theme="dark"] .mismatch {
+            background-color: var(--red-dark);
+            color: #fff;
+        }
 
-    .highlight {
-      background-color: var(--highlight-yellow);
-      font-weight: bold;
-    }
+        .highlight {
+            background-color: var(--highlight-yellow);
+            font-weight: bold;
+        }
 
-    .hidden {
-      display: none;
-    }
-  </style>
+        .hidden {
+            display: none;
+        }
+    </style>
 </head>
 
 
 <body data-theme="light">
-  <h2>🧠 JSON-Policy-Compare-Tool</h2>
-  <button onclick="toggleTheme()">🌓 Toggle Theme</button>
-  <select id="modeSelect" onchange="toggleMode()">
-    <option value="paste">📋 Paste JSON</option>
-    <option value="upload">📁 Upload CSV</option>
-  </select>
+    <h2>🧠 JSON-Policy-Compare-Tool</h2>
+    <button onclick="toggleTheme()">🌓 Toggle Theme</button>
+    <select id="modeSelect" onchange="toggleMode()">
+        <option value="paste">📋 Paste JSON</option>
+        <option value="upload">📁 Upload CSV</option>
+    </select>
 
-  <!-- PASTE MODE -->
-  <div id="pasteMode" class="flex">
-    <!-- JSON Input Box -->
-    <div class="box">
-      <h3>Paste Nested JSON</h3>
-      <textarea id="jsonInput" placeholder='One JSON array per line'></textarea>
+    <!-- PASTE MODE -->
+    <div id="pasteMode" class="flex">
+        <!-- JSON Input Box -->
+        <div class="box">
+            <h3>Paste Nested JSON</h3>
+            <textarea id="jsonInput" placeholder='One JSON array per line'></textarea>
+        </div>
+
+        <!-- Sorted Output Box -->
+        <div class="box">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3>Sorted Output</h3>
+                <button onclick="copySorted()">📋 Copy</button>
+            </div>
+            <div class="output" id="jsonOutput">Sorted result will appear here...</div>
+        </div>
     </div>
 
-    <!-- Sorted Output Box -->
-    <div class="box">
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h3>Sorted Output</h3>
-        <button onclick="copySorted()">📋 Copy</button>
-      </div>
-      <div class="output" id="jsonOutput">Sorted result will appear here...</div>
+
+    <!-- UPLOAD MODE -->
+    <div id="uploadMode" class="hidden">
+        <input type="file" id="csvFileInput" accept=".csv" />
+        <button onclick="processCSV()">📥 Load & Process</button>
+        <button onclick="downloadCSV()">⬇️ Download CSV</button>
+        <input type="text" id="searchInput" placeholder="🔍 Search value..." oninput="filterTable()" />
+        <div id="csvTable"></div>
     </div>
-  </div>
 
-
-  <!-- UPLOAD MODE -->
-  <div id="uploadMode" class="hidden">
-    <input type="file" id="csvFileInput" accept=".csv" />
-    <button onclick="processCSV()">📥 Load & Process</button>
-    <button onclick="downloadCSV()">⬇️ Download CSV</button>
-    <input type="text" id="searchInput" placeholder="🔍 Search value..." oninput="filterTable()" />
-    <div id="csvTable"></div>
-  </div>
-
-  <script>
-    function toggleTheme() {
-      const body = document.body;
-      body.setAttribute("data-theme", body.getAttribute("data-theme") === "dark" ? "light" : "dark");
-    }
-
-    function toggleMode() {
-      const mode = document.getElementById("modeSelect").value;
-      document.getElementById("pasteMode").classList.toggle("hidden", mode !== "paste");
-      document.getElementById("uploadMode").classList.toggle("hidden", mode !== "upload");
-    }
-
-    document.getElementById("jsonInput").addEventListener("input", () => {
-      const val = document.getElementById("jsonInput").value;
-      const lines = val.trim().split("\n");
-      const results = [];
-
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (!line) continue;
-        try {
-          const cleaned = line.replace(/\"\"/g, '\"');
-          const arr = JSON.parse(cleaned);
-          const sorted = arr.map(x => x.S).sort().join(", ");
-          results.push(`${i + 1}. ${sorted}`);
-        } catch (e) {
-          results.push(`${i + 1}. ❌ Invalid JSON`);
+    <script>
+        function toggleTheme() {
+            const body = document.body;
+            body.setAttribute("data-theme", body.getAttribute("data-theme") === "dark" ? "light" : "dark");
         }
-      }
-      document.getElementById("jsonOutput").innerHTML = results
-        .map(line => `<div>${line}</div><hr style="border: 0; border-top: 1px dashed #ccc;">`)
-        .join("");
-    });
 
-
-
-    function copySorted() {
-      const val = document.getElementById("jsonInput").value;
-      const lines = val.trim().split("\n");
-      const results = [];
-
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (!line) continue;
-        try {
-          const cleaned = line.replace(/\"\"/g, '"');
-          const arr = JSON.parse(cleaned);
-          const sorted = arr.map(x => x.S).sort().join(", ");
-          results.push(sorted); // ⛔️ No index or formatting
-        } catch (e) {
-          results.push(`❌ Invalid JSON`);
+        function toggleMode() {
+            const mode = document.getElementById("modeSelect").value;
+            document.getElementById("pasteMode").classList.toggle("hidden", mode !== "paste");
+            document.getElementById("uploadMode").classList.toggle("hidden", mode !== "upload");
         }
-      }
 
-      // Copy plain-text version (each sorted output on a new line)
-      const textToCopy = results.join("\n");
+        document.getElementById("jsonInput").addEventListener("input", () => {
+            const val = document.getElementById("jsonInput").value;
+            const lines = val.trim().split("\n");
+            const results = [];
 
-      navigator.clipboard.writeText(textToCopy).then(() => {
-        alert("✅ Sorted values copied to clipboard!");
-      }).catch(err => {
-        alert("❌ Failed to copy: " + err);
-      });
-    }
-
-
-    let tableData = [];
-
-    function processCSV() {
-      const fileInput = document.getElementById("csvFileInput");
-      if (!fileInput.files.length) return alert("Please upload a CSV file.");
-
-      Papa.parse(fileInput.files[0], {
-        header: true,
-        skipEmptyLines: true,
-        complete: function (results) {
-          tableData = results.data.map(row => {
-            return {
-              id: row.OverRideID || row[Object.keys(row)[0]],
-              dca: parseAndSort(row.DCA),
-              dcb: parseAndSort(row.DCB),
-              dcc: parseAndSort(row.DCC),
-              dcd: parseAndSort(row.DCD)
-            };
-          });
-          renderTable(tableData);
-        }
-      });
-    }
-
-    function parseAndSort(str) {
-      try {
-        const cleaned = str.replace(/""/g, '"');
-        const parsed = JSON.parse(cleaned);
-        return parsed.map(x => x.S).sort();
-      } catch {
-        return ["❌ Invalid"];
-      }
-    }
-
-    function renderTable(data) {
-      let html = `<table><thead><tr><th>OverRideID</th><th>DCA</th><th>DCB</th><th>DCC</th><th>DCD</th></tr></thead><tbody>`;
-      data.forEach(row => {
-        html += `<tr><td>${row.id}</td>`;
-        const ref = row.dca.join(", ");
-        [row.dca, row.dcb, row.dcc, row.dcd].forEach(valList => {
-          const cellVal = valList.join(", ");
-          const cls = (JSON.stringify(valList) === JSON.stringify(row.dca)) ? 'match' : 'mismatch';
-          html += `<td class="${cls}">${cellVal}</td>`;
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                try {
+                    const cleaned = line.replace(/\"\"/g, '\"');
+                    const arr = JSON.parse(cleaned);
+                    const sorted = arr.map(x => x.S).sort().join(", ");
+                    results.push(`${i + 1}. ${sorted}`);
+                } catch (e) {
+                    results.push(`${i + 1}. ❌ Invalid JSON`);
+                }
+            }
+            document.getElementById("jsonOutput").innerHTML = results
+                .map(line => `<div>${line}</div><hr style="border: 0; border-top: 1px dashed #ccc;">`)
+                .join("");
         });
-        html += '</tr>';
-      });
-      html += `</tbody></table>`;
-      document.getElementById("csvTable").innerHTML = html;
-    }
 
-    function filterTable() {
-      const input = document.getElementById("searchInput").value.toLowerCase();
-      const table = document.querySelector("#csvTable table");
-      if (!table) return;
 
-      [...table.querySelectorAll("tbody tr")].forEach(row => {
-        let found = false;
-        row.querySelectorAll("td").forEach(cell => {
-          const text = cell.textContent;
-          const regex = new RegExp(`(${input})`, 'gi');
-          cell.innerHTML = text.replace(regex, match => {
-            found = true;
-            return `<span class="highlight">${match}</span>`;
-          });
+
+        function copySorted() {
+            const val = document.getElementById("jsonInput").value;
+            const lines = val.trim().split("\n");
+            const results = [];
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                try {
+                    const cleaned = line.replace(/\"\"/g, '"');
+                    const arr = JSON.parse(cleaned);
+                    const sorted = arr.map(x => x.S).sort().join(", ");
+                    results.push(sorted); // ⛔️ No index or formatting
+                } catch (e) {
+                    results.push(`❌ Invalid JSON`);
+                }
+            }
+
+            // Copy plain-text version (each sorted output on a new line)
+            const textToCopy = results.join("\n");
+
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                alert("✅ Sorted values copied to clipboard!");
+            }).catch(err => {
+                alert("❌ Failed to copy: " + err);
+            });
+        }
+
+
+        let tableData = [];
+
+        function processCSV() {
+            const fileInput = document.getElementById("csvFileInput");
+            if (!fileInput.files.length) return alert("Please upload a CSV file.");
+
+            Papa.parse(fileInput.files[0], {
+                header: true,
+                skipEmptyLines: true,
+                complete: function (results) {
+                    tableData = results.data.map(row => {
+                        return {
+                            id: row.OverRideID || row[Object.keys(row)[0]],
+                            dca: parseAndSort(row.DCA),
+                            dcb: parseAndSort(row.DCB),
+                            dcc: parseAndSort(row.DCC),
+                            dcd: parseAndSort(row.DCD)
+                        };
+                    });
+                    renderTable(tableData);
+                }
+            });
+        }
+
+        function parseAndSort(str) {
+            try {
+                const cleaned = str.replace(/""/g, '"');
+                const parsed = JSON.parse(cleaned);
+                return parsed.map(x => x.S).sort();
+            } catch {
+                return ["❌ Invalid"];
+            }
+        }
+
+        function renderTable(data) {
+            let html = `<table><thead><tr><th>OverRideID</th><th>DCA</th><th>DCB</th><th>DCC</th><th>DCD</th></tr></thead><tbody>`;
+            data.forEach(row => {
+                html += `<tr><td>${row.id}</td>`;
+                const ref = row.dca.join(", ");
+                [row.dca, row.dcb, row.dcc, row.dcd].forEach(valList => {
+                    const cellVal = valList.join(", ");
+                    const cls = (JSON.stringify(valList) === JSON.stringify(row.dca)) ? 'match' : 'mismatch';
+                    html += `<td class="${cls}">${cellVal}</td>`;
+                });
+                html += '</tr>';
+            });
+            html += `</tbody></table>`;
+            document.getElementById("csvTable").innerHTML = html;
+        }
+
+        function filterTable() {
+            const input = document.getElementById("searchInput").value.toLowerCase();
+            const table = document.querySelector("#csvTable table");
+            if (!table) return;
+
+            [...table.querySelectorAll("tbody tr")].forEach(row => {
+                let found = false;
+                row.querySelectorAll("td").forEach(cell => {
+                    const text = cell.textContent;
+                    const regex = new RegExp(`(${input})`, 'gi');
+                    cell.innerHTML = text.replace(regex, match => {
+                        found = true;
+                        return `<span class="highlight">${match}</span>`;
+                    });
+                });
+                row.style.display = found || !input ? '' : 'none';
+            });
+        }
+
+        /* Blocked the Right click option to inspect the source code as a security concern of code copyright.
+        Below is exact code added newly at last part of code: */
+
+        document.addEventListener('contextmenu', event => event.preventDefault());
+        document.addEventListener('keydown', e => {
+            if (e.ctrlKey && (e.key === 'u' || e.key === 'U' || e.key === 'i' || e.key === 'I' || e.key === 'j' || e.key === 'J')) {
+                e.preventDefault();
+            }
+            if (e.keyCode === 123) { // F12 key
+                e.preventDefault();
+            }
         });
-        row.style.display = found || !input ? '' : 'none';
-      });
-    }
 
-    function downloadCSV() {
-      let csv = 'OverRideID,DCA,DCB,DCC,DCD\n';
-      tableData.forEach(row => {
-        const line = `"${row.id}","${row.dca.join(', ')}","${row.dcb.join(', ')}","${row.dcc.join(', ')}","${row.dcd.join(', ')}"`;
-        csv += line + "\n";
-      });
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = 'output.csv';
-      link.click();
-    }
-  </script>
+        function downloadCSV() {
+            let csv = 'OverRideID,DCA,DCB,DCC,DCD\n';
+            tableData.forEach(row => {
+                const line = `"${row.id}","${row.dca.join(', ')}","${row.dcb.join(', ')}","${row.dcc.join(', ')}","${row.dcd.join(', ')}"`;
+                csv += line + "\n";
+            });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'output.csv';
+            link.click();
+        }
+    </script>
 </body>
+
 </html>
